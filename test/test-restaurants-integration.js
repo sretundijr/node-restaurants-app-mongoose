@@ -3,13 +3,11 @@ const chaiHttp = require('chai-http');
 const faker = require('faker');
 const mongoose = require('mongoose');
 
-// this makes the should syntax available throughout
-// this module
 const should = chai.should();
 
-const {Restaurant} = require('../models');
-const {app, runServer, closeServer} = require('../server');
-const {TEST_DATABASE_URL} = require('../config');
+const { Restaurant } = require('../models');
+const { app, runServer, closeServer } = require('../server');
+const { TEST_DATABASE_URL } = require('../config');
 
 chai.use(chaiHttp);
 
@@ -22,7 +20,7 @@ function seedRestaurantData() {
   console.info('seeding restaurant data');
   const seedData = [];
 
-  for (let i=1; i<=10; i++) {
+  for (let i = 1; i <= 10; i++) {
     seedData.push(generateRestaurantData());
   }
   // this will return a promise
@@ -75,38 +73,38 @@ function generateRestaurantData() {
 // to ensure  ata from one test does not stick
 // around for next one
 function tearDownDb() {
-    console.warn('Deleting database');
-    return mongoose.connection.dropDatabase();
+  console.warn('Deleting database');
+  return mongoose.connection.dropDatabase();
 }
 
-describe('Restaurants API resource', function() {
+describe('Restaurants API resource', function () {
 
   // we need each of these hook functions to return a promise
   // otherwise we'd need to call a `done` callback. `runServer`,
   // `seedRestaurantData` and `tearDownDb` each return a promise,
   // so we return the value returned by these function calls.
-  before(function() {
+  before(function () {
     return runServer(TEST_DATABASE_URL);
   });
 
-  beforeEach(function() {
+  beforeEach(function () {
     return seedRestaurantData();
   });
 
-  afterEach(function() {
+  afterEach(function () {
     return tearDownDb();
   });
 
-  after(function() {
+  after(function () {
     return closeServer();
   })
 
   // note the use of nested `describe` blocks.
   // this allows us to make clearer, more discrete tests that focus
   // on proving something small
-  describe('GET endpoint', function() {
+  describe('GET endpoint', function () {
 
-    it('should return all existing restaurants', function() {
+    it('should return all existing restaurants', function () {
       // strategy:
       //    1. get back all restaurants returned by by GET request to `/restaurants`
       //    2. prove res has right status, data type
@@ -118,7 +116,7 @@ describe('Restaurants API resource', function() {
       let res;
       return chai.request(app)
         .get('/restaurants')
-        .then(function(_res) {
+        .then(function (_res) {
           // so subsequent .then blocks can access resp obj.
           res = _res;
           res.should.have.status(200);
@@ -126,25 +124,25 @@ describe('Restaurants API resource', function() {
           res.body.restaurants.should.have.length.of.at.least(1);
           return Restaurant.count();
         })
-        .then(function(count) {
+        .then(function (count) {
           res.body.restaurants.should.have.length.of(count);
         });
     });
 
 
-    it('should return restaurants with right fields', function() {
+    it('should return restaurants with right fields', function () {
       // Strategy: Get back all restaurants, and ensure they have expected keys
 
       let resRestaurant;
       return chai.request(app)
         .get('/restaurants')
-        .then(function(res) {
+        .then(function (res) {
           res.should.have.status(200);
           res.should.be.json;
           res.body.restaurants.should.be.a('array');
           res.body.restaurants.should.have.length.of.at.least(1);
 
-          res.body.restaurants.forEach(function(restaurant) {
+          res.body.restaurants.forEach(function (restaurant) {
             restaurant.should.be.a('object');
             restaurant.should.include.keys(
               'id', 'name', 'cuisine', 'borough', 'grade', 'address');
@@ -152,7 +150,7 @@ describe('Restaurants API resource', function() {
           resRestaurant = res.body.restaurants[0];
           return Restaurant.findById(resRestaurant.id);
         })
-        .then(function(restaurant) {
+        .then(function (restaurant) {
 
           resRestaurant.id.should.equal(restaurant.id);
           resRestaurant.name.should.equal(restaurant.name);
@@ -165,12 +163,12 @@ describe('Restaurants API resource', function() {
     });
   });
 
-  describe('POST endpoint', function() {
+  describe('POST endpoint', function () {
     // strategy: make a POST request with data,
     // then prove that the restaurant we get back has
     // right keys, and that `id` is there (which means
     // the data was inserted into db)
-    it('should add a new restaurant', function() {
+    it('should add a new restaurant', function () {
 
       const newRestaurant = generateRestaurantData();
       let mostRecentGrade;
@@ -178,7 +176,7 @@ describe('Restaurants API resource', function() {
       return chai.request(app)
         .post('/restaurants')
         .send(newRestaurant)
-        .then(function(res) {
+        .then(function (res) {
           res.should.have.status(201);
           res.should.be.json;
           res.body.should.be.a('object');
@@ -196,7 +194,7 @@ describe('Restaurants API resource', function() {
           res.body.grade.should.equal(mostRecentGrade);
           return Restaurant.findById(res.body.id);
         })
-        .then(function(restaurant) {
+        .then(function (restaurant) {
           restaurant.name.should.equal(newRestaurant.name);
           restaurant.cuisine.should.equal(newRestaurant.cuisine);
           restaurant.borough.should.equal(newRestaurant.borough);
@@ -209,14 +207,14 @@ describe('Restaurants API resource', function() {
     });
   });
 
-  describe('PUT endpoint', function() {
+  describe('PUT endpoint', function () {
 
     // strategy:
     //  1. Get an existing restaurant from db
     //  2. Make a PUT request to update that restaurant
     //  3. Prove restaurant returned by request contains data we sent
     //  4. Prove restaurant in db is correctly updated
-    it('should update fields you send over', function() {
+    it('should update fields you send over', function () {
       const updateData = {
         name: 'fofofofofofofof',
         cuisine: 'futuristic fusion'
@@ -225,7 +223,7 @@ describe('Restaurants API resource', function() {
       return Restaurant
         .findOne()
         .exec()
-        .then(function(restaurant) {
+        .then(function (restaurant) {
           updateData.id = restaurant.id;
 
           // make request then inspect it to make sure it reflects
@@ -234,40 +232,40 @@ describe('Restaurants API resource', function() {
             .put(`/restaurants/${restaurant.id}`)
             .send(updateData);
         })
-        .then(function(res) {
+        .then(function (res) {
           res.should.have.status(204);
 
           return Restaurant.findById(updateData.id).exec();
         })
-        .then(function(restaurant) {
+        .then(function (restaurant) {
           restaurant.name.should.equal(updateData.name);
           restaurant.cuisine.should.equal(updateData.cuisine);
         });
-      });
+    });
   });
 
-  describe('DELETE endpoint', function() {
+  describe('DELETE endpoint', function () {
     // strategy:
     //  1. get a restaurant
     //  2. make a DELETE request for that restaurant's id
     //  3. assert that response has right status code
     //  4. prove that restaurant with the id doesn't exist in db anymore
-    it('delete a restaurant by id', function() {
+    it('delete a restaurant by id', function () {
 
       let restaurant;
 
       return Restaurant
         .findOne()
         .exec()
-        .then(function(_restaurant) {
+        .then(function (_restaurant) {
           restaurant = _restaurant;
           return chai.request(app).delete(`/restaurants/${restaurant.id}`);
         })
-        .then(function(res) {
+        .then(function (res) {
           res.should.have.status(204);
           return Restaurant.findById(restaurant.id).exec();
         })
-        .then(function(_restaurant) {
+        .then(function (_restaurant) {
           // when a variable's value is null, chaining `should`
           // doesn't work. so `_restaurant.should.be.null` would raise
           // an error. `should.be.null(_restaurant)` is how we can
